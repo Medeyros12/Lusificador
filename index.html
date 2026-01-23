@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Evolução Fonética: Latim ao Galego-Português</title>
+</head>
+<body>
+
+    <h1>Simulador de Evolução Fonética</h1>
+    <p>Insira a palavra em <strong>Latim Clássico (IPA)</strong>.<br>
+    <strong>Regra importante:</strong> Use <code>'</code> no <strong>início</strong> da sílaba tônica e <code>.</code> para separar sílabas.<br>
+    <em>Exemplos: 'la.kum , 'wɛn.tuːm, 'paː.ks</em></p>
+
+    <label for="inputLatin">Latim Clássico:</label><br>
+    <input type="text" id="inputLatin" placeholder="'la.kum" style="font-size: 1.2em; padding: 5px; width: 300px;">
+    <button onclick="evolve()">Evoluir</button>
+
+    <hr>
+
+    <div id="results"></div>
+
+<script>
+/**
+ * Simulador baseado nas notas de evolução fonética.
+ * Fontes citadas no código original: a .
+ */
+function evolve() {
+    let word = document.getElementById('inputLatin').value.trim();
+    
+    // Limpar output anterior
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = "";
+
+    // --- ESTÁGIO 0: LATIM CLÁSSICO (INPUT) ---
+    renderStage("Latim Clássico", word);
+
+    // =================================================================
+    // ESTÁGIO 1: PROTO-ROMÂNICO
+    // =================================================================
+    
+    // 1. Mudanças de Vogais 
+    // Protegendo longas
+    word = word.replace(/iː/g, "__I_LONG__");
+    word = word.replace(/uː/g, "__U_LONG__");
+    word = word.replace(/eː/g, "__E_LONG__");
+    word = word.replace(/oː/g, "__O_LONG__");
+    word = word.replace(/aː/g, "a"); // A longo e curto convergem
+
+    // Curtas abrem 
+    word = word.replace(/i/g, "ɪ");
+    word = word.replace(/u/g, "ʊ");
+    word = word.replace(/e/g, "ɛ");
+    word = word.replace(/o/g, "ɔ");
+
+    // Restaurar longas
+    word = word.replace(/__I_LONG__/g, "iː");
+    word = word.replace(/__U_LONG__/g, "uː");
+    word = word.replace(/__E_LONG__/g, "eː");
+    word = word.replace(/__O_LONG__/g, "oː");
+
+    // Grupo I 
+    word = word.replace(/h/g, ""); // Perda de h
+    
+    // Perda de m final átono 
+    if (word.endsWith('m')) {
+        let syls = word.split('.');
+        let lastSyl = syls[syls.length-1];
+        // Se a última sílaba NÃO tem acento, m cai. Se tem, vira n.
+        if (lastSyl.includes("'")) {
+             word = word.substring(0, word.length - 1) + 'n';
+        } else {
+             word = word.substring(0, word.length - 1);
+        }
+    }
+    
+    // Perda de n antes de fricativa 
+    word = word.replace(/n([sf])/g, "$1"); 
+
+    // Grupo II 
+    word = word.replace(/ɪɪ/g, "iː");
+    word = word.replace(/ɪiː/g, "iː");
+    word = word.replace(/w/g, "β"); 
+    
+    // b intervocálico > β 
+    // Regex ajustada para permitir ' opcional (ex: a.'ba -> a.'βa)
+    word = word.replace(/([aeiouɛɔɪʊaːeːiːoːuː])(\.?[']?)b(\.?[']?[aeiouɛɔɪʊaːeːiːoːuː])/g, "$1$2β$3");
+    
+    // β intervocálico seguido de vogal arredondada desaparece 
+    word = word.replace(/β(\.?[']?[uʊoɔ])/g, "$1");
+
+    // Hiatos 
+    // Anterior átona virando /j/.
+    // Nota: precisa verificar se a vogal inicial do hiato não é tônica.
+    // Simplificação: [ɛeɪ] seguido de vogal
+    word = word.replace(/([ɛeɪ])\.([aeiouɛɔɪʊ])/g, "j$2"); 
+    word = word.replace(/([ɔoʊ])\.([aeiouɛɔɪʊ])/g, "w$2");
+
+    // Grupo III 
+    word = word.replace(/w([oɔ])/g, "$1"); 
+    word = word.replace(/woː|wɔ/g, "oː");
+    word = word.replace(/jeːː|jɛ/g, "eː");
+    word = word.replace(/ks/g, "s"); // Simplificação temporária
+    word = word.replace(/ae̯/g, "ɛː").replace(/oe̯/g, "eː");
+    word = word.replace(/([eo])ː(stj)/g, (m, v, s) => (v==='e'?'i':'u') + "ː" + s);
+
+    // Grupo IV 
+    if (word.match(/^'?s[ptkbdgmnl]/)) {
+        // Se começa com s+consoante (considerando acento opcional no inicio)
+        if (word.startsWith("'")) word = word.replace(/^'/, "'ɪ");
+        else word = "ɪ" + word;
+    }
+    
+    // Perda da distinção de longas 
+    word = word.replace(/ː/g, "");
+    
+    // ɛ e ɔ tornam-se e/o em sílabas átonas 
+    let syls = word.split('.');
+    syls = syls.map(s => {
+        if (!s.includes("'")) { // Se não tem ', é átona
+            return s.replace(/ɛ/g, "e").replace(/ɔ/g, "o");
+        }
+        return s;
+    });
+    word = syls.join('.');
+
+    // Grupo V - Palatalização por J 
+    // l+j -> ʎ, n+j -> ɲ, s+j -> ʃ
+    word = word.replace(/l\.?j/g, "ʎ");
+    word = word.replace(/n\.?j/g, "ɲ");
+    word = word.replace(/s\.?j/g, "ʃ"); 
+
+    renderStage("Proto-Românico", word);
+
+    // =================================================================
+    // ESTÁGIO 2: PROTO-IBERO-ROMÂNICO
+    // =================================================================
+
+    // Mudanças principais 
+    // Palatalização de k, g antes de i, ɪ, e, ɛ.
+    // O regex deve permitir o apóstrofo opcional entre a consoante e a vogal (ex: 'ke -> tse)
+    word = word.replace(/k([']?)([iɪeɛ])/g, "ts$1$2"); // k -> ts
+    word = word.replace(/g([']?)([iɪeɛ])/g, "j$1$2");  // g -> j
+    
+    // Síncope 
+    // Perda de vogal pós-tônica em proparoxítonas.
+    syls = word.split('.');
+    let stressIndex = syls.findIndex(s => s.includes("'"));
+    // Proparoxítona: acento na antepenúltima (index <= length-3)
+    if (stressIndex !== -1 && stressIndex <= syls.length - 3) {
+        let postTonicIndex = stressIndex + 1;
+        // Remove vogais da sílaba pós-tônica
+        syls[postTonicIndex] = syls[postTonicIndex].replace(/[aeiouɛɔɪʊ]/g, "");
+    }
+    // Reconstruir palavra e limpar pontos órfãos (ex: .b.)
+    word = syls.join('.').replace(/\.\./g, '.');
+
+    // Dissimilação e Clusters 
+    word = word.replace(/tl/g, "cl");
+    word = word.replace(/nm/g, "lm");
+    word = word.replace(/m\.?r/g, "mbr");
+    word = word.replace(/pt/g, "tt");
+    word = word.replace(/ps/g, "ss");
+    word = word.replace(/cl/g, "kʎ");
+    
+    // gl -> gʎ (intervocálico) ou l (início) 
+    // Verificar início de palavra considerando acento
+    if (word.match(/^'?gl/)) word = word.replace("gl", "l");
+    else word = word.replace(/gl/g, "gʎ");
+
+    // Grupo II 
+    word = word.replace(/kt/g, "jt"); 
+    word = word.replace(/ks/g, "js"); 
+    word = word.replace(/lt/g, "jt"); 
+
+    // Grupo III 
+    word = word.replace(/pl/g, "pʎ");
+    word = word.replace(/fl/g, "fʎ");
+    word = word.replace(/aj/g, "ɛj");
+    word = word.replace(/aw/g, "ɔw");
+
+    // Grupo IV 
+    // Desaparecimento de d, g intervocálico
+    word = word.replace(/([aeiouɛɔ])(\.?[']?)d([aeiouɛɔ])/g, "$1$2$3"); 
+    // g some após vogal anterior e antes de e/i
+    word = word.replace(/([aeiouɛɔ])(\.?[']?)g([ei])/g, "$1$2$3"); 
+    
+    // j inicial > ɟ͡ʝ
+    if (word.match(/^'?j/)) word = word.replace("j", "ɟ͡ʝ");
+
+    // Grupo V - Metafonia parcial 
+    syls = word.split('.');
+    for (let i = 0; i < syls.length - 1; i++) {
+        if (syls[i].includes("'")) {
+            // Verifica se a próxima tem i
+            if (syls[i+1].includes('i')) {
+                syls[i] = syls[i].replace('e', 'i').replace('o', 'u');
+            }
+        }
+    }
+    word = syls.join('.');
+    word = word.replace(/t$/g, ""); // Perda de t final
+
+    // Grupo VI 
+    word = word.replace(/ɔj/g, "oj");
+    word = word.replace(/ɔw/g, "ow");
+    // ɪ, ʊ desaparecem
+    word = word.replace(/([ɪʊ])$/, (match) => match==='ɪ'?'i':'u');
+    word = word.replace(/[ɪ]/g, "e");
+    word = word.replace(/[ʊ]/g, "o");
+
+    // Grupo VII - Lenição 
+    // p, t, k intervocálicos -> b, d, g
+    const voicedMap = {'p':'b', 't':'d', 'k':'g', 'ts':'dz'};
+    word = word.replace(/([aeiouɛɔ])(\.?[']?)([ptk]|ts)(\.?[']?)([aeiouɛɔr])/g, function(match, v1, div1, c, div2, v2){
+        let newC = (c==='ts' ? 'z' : voicedMap[c]);
+        return v1 + div1 + newC + div2 + v2;
+    });
+
+    renderStage("Proto-Ibero-Românico", word);
+
+    // =================================================================
+    // ESTÁGIO 3: GALEGO-PORTUGUÊS
+    // =================================================================
+    
+    // Metafonias 
+    syls = word.split('.');
+    for (let i = 0; i < syls.length - 1; i++) {
+        if (syls[i].includes("'")) {
+            if (syls[i+1].includes('u') || (syls[i+2] && syls[i+2].includes('u'))) {
+                syls[i] = syls[i].replace('ɔ', 'o');
+            }
+        }
+    }
+    word = syls.join('.');
+
+    // Final átono 
+    word = word.replace(/i$/g, "e");
+    word = word.replace(/u$/g, "o");
+
+    // Nasalização 
+    const nasalMap = {'a':'ã', 'e':'ẽ', 'i':'ĩ', 'o':'õ', 'u':'ũ'};
+    word = word.replace(/([aeiou])n([. \n]|$)/g, function(match, v, boundary){
+        return nasalMap[v] + boundary; 
+    });
+    
+    // Grupos Palatais 
+    word = word.replace(/kʎ|pʎ|fʎ/g, "tʃ");
+    
+    // Perda de L / N intervocálicos 
+    // N intervocálico nasaliza a anterior
+    word = word.replace(/([aeiou])(\.?[']?)n(\.?[']?)([aeiou])/g, function(match, v1, d1, d2, v2){
+        return nasalMap[v1] + d1 + d2 + v2;
+    });
+    // L intervocálico cai
+    word = word.replace(/([aeiouãõẽĩũ])(\.?[']?)l(\.?[']?)([aeiouãõẽĩũ])/g, "$1$2$3$4");
+
+    // Simplificação de Geminadas (exceto r) 
+    word = word.replace(/([ptkbdgfsmnl])\1/g, "$1");
+    
+    // R vibrante vs brando 
+    word = word.replace(/rr/g, "__R_STRONG__"); 
+    // r simples intervocálico -> ɾ
+    word = word.replace(/([aeiouãõẽĩũ])(\.?[']?)r(\.?[']?)([aeiouãõẽĩũ])/g, "$1$2ɾ$3$4");
+    word = word.replace(/__R_STRONG__/g, "r");
+
+    // ts/dz -> s/z 
+    word = word.replace(/ts/g, "s");
+    word = word.replace(/dz/g, "z");
+
+    // Limpeza final para garantir formatação . '
+    // Remove pontos duplos e garante que se houver ponto e acento, a ordem seja . '
+    word = word.replace(/\.\./g, ".");
+    
+    renderStage("Galego-Português", word);
+}
+
+function renderStage(name, content) {
+    const div = document.createElement('div');
+    const h3 = document.createElement('h3');
+    h3.textContent = name;
+    
+    const p = document.createElement('p');
+    // Apenas para exibição final, garante que não haja ' no meio sem ponto se for sílaba diferente
+    // Mas mantemos fiel ao processamento interno
+    p.textContent = "[" + content + "]";
+    p.style.fontFamily = "'Courier New', monospace";
+    
+    div.appendChild(h3);
+    div.appendChild(p);
+    document.getElementById('results').appendChild(div);
+}
+</script>
+
+</body>
+</html>
