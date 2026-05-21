@@ -12,7 +12,7 @@
     <em>Exemplos: 'la.kum , 'wɛn.tuːm, 'paː.ks</em></p>
 
     <label for="inputLatin">Latim Clássico:</label><br>
-    <input type="text" id="inputLatin" placeholder="'la.kum" style="font-size: 1.2em; padding: 5px; width: 300px;">
+    <input type="text" id="inputLatin" placeholder="ˈla.kum" style="font-size: 1.2em; padding: 5px; width: 300px;">
     <button onclick="evolve()">Evoluir</button>
 
     <hr>
@@ -66,7 +66,7 @@ function evolve() {
         let syls = word.split('.');
         let lastSyl = syls[syls.length-1];
         // Se a última sílaba NÃO tem acento, m cai. Se tem, vira n.
-        if (lastSyl.includes("'")) {
+        if (lastSyl.includes("ˈ")) {
              word = word.substring(0, word.length - 1) + 'n';
         } else {
              word = word.substring(0, word.length - 1);
@@ -106,7 +106,7 @@ function evolve() {
     // Grupo IV 
     if (word.match(/^'?s[ptkbdgmnl]/)) {
         // Se começa com s+consoante (considerando acento opcional no inicio)
-        if (word.startsWith("'")) word = word.replace(/^'/, "'ɪ");
+        if (word.startsWith("ˈ")) word = word.replace(/^'/, "ˈɪ");
         else word = "ɪ" + word;
     }
     
@@ -116,7 +116,7 @@ function evolve() {
     // ɛ e ɔ tornam-se e/o em sílabas átonas 
     let syls = word.split('.');
     syls = syls.map(s => {
-        if (!s.includes("'")) { // Se não tem ', é átona
+        if (!s.includes("ˈ")) { // Se não tem ', é átona
             return s.replace(/ɛ/g, "e").replace(/ɔ/g, "o");
         }
         return s;
@@ -144,7 +144,7 @@ function evolve() {
     // Síncope 
     // Perda de vogal pós-tônica em proparoxítonas.
     syls = word.split('.');
-    let stressIndex = syls.findIndex(s => s.includes("'"));
+    let stressIndex = syls.findIndex(s => s.includes("ˈ"));
     // Proparoxítona: acento na antepenúltima (index <= length-3)
     if (stressIndex !== -1 && stressIndex <= syls.length - 3) {
         let postTonicIndex = stressIndex + 1;
@@ -190,7 +190,7 @@ function evolve() {
     // Grupo V - Metafonia parcial 
     syls = word.split('.');
     for (let i = 0; i < syls.length - 1; i++) {
-        if (syls[i].includes("'")) {
+        if (syls[i].includes("ˈ")) {
             // Verifica se a próxima tem i
             if (syls[i+1].includes('i')) {
                 syls[i] = syls[i].replace('e', 'i').replace('o', 'u');
@@ -225,7 +225,7 @@ function evolve() {
     // Metafonias 
     syls = word.split('.');
     for (let i = 0; i < syls.length - 1; i++) {
-        if (syls[i].includes("'")) {
+        if (syls[i].includes("ˈ")) {
             if (syls[i+1].includes('u') || (syls[i+2] && syls[i+2].includes('u'))) {
                 syls[i] = syls[i].replace('ɔ', 'o');
             }
@@ -283,7 +283,7 @@ function renderStage(name, content) {
     // Apenas para exibição final, garante que não haja ' no meio sem ponto se for sílaba diferente
     // Mas mantemos fiel ao processamento interno
     p.textContent = "[" + content + "]";
-    p.style.fontFamily = "'Courier New', monospace";
+    p.style.fontFamily = "ˈCourier New', monospace";
     
     div.appendChild(h3);
     div.appendChild(p);
